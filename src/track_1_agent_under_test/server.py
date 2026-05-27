@@ -24,6 +24,7 @@ from a2a.types import AgentCard
 from car_bench_agent import CARBenchAgentExecutor
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+from llm_routing import configure_litellm_router_env, default_agent_model, routing_summary
 from logging_utils import configure_logger
 sys.path.pop(0)
 
@@ -81,7 +82,8 @@ def main():
     # Support both command-line args and environment variables
     # Priority: CLI args > env vars > default
     import os
-    agent_llm = args.agent_llm or os.getenv("AGENT_LLM", "nvidia_nim/meta/llama-3.3-70b-instruct")
+    configure_litellm_router_env()
+    agent_llm = args.agent_llm or os.getenv("AGENT_LLM") or default_agent_model()
     completion_kwargs = {
         "temperature": args.temperature or float(os.getenv("AGENT_TEMPERATURE", 0.0)),
         "thinking": args.thinking or (os.getenv("AGENT_THINKING", "false").lower() == "true"),
@@ -92,6 +94,7 @@ def main():
     logger.info(
         "Starting CAR-bench agent",
         model=agent_llm,
+        llm_routing=routing_summary(agent_llm),
         temperature=completion_kwargs["temperature"],
         thinking=completion_kwargs["thinking"],
         reasoning_effort=completion_kwargs["reasoning_effort"],

@@ -38,6 +38,12 @@ from agentbeats.models import EvalRequest
 from agentbeats.tool_provider import ToolProvider
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+from llm_routing import (
+    configure_litellm_router_env,
+    default_evaluator_model,
+    default_evaluator_provider,
+    routing_summary,
+)
 from logging_utils import configure_logger
 from tool_call_types import normalize_tool_arguments
 from turn_metrics import (
@@ -59,7 +65,7 @@ nest_asyncio.apply()
 logger = configure_logger(role="evaluator", context="-")
 
 RESPOND_ACTION_NAME = "respond"
-DEFAULT_NVIDIA_NIM_MODEL = "nvidia_nim/meta/llama-3.3-70b-instruct"
+DEFAULT_NVIDIA_NIM_MODEL = "openai/gpt-oss-120b"
 
 
 def config_or_env(config: dict, key: str, env_key: str, default: Any) -> Any:
@@ -540,6 +546,7 @@ def calculate_average_metrics_across_splits(
 
 def build_args_from_config(config: dict, task_type: str) -> argparse.Namespace:
     """Convert evaluation config to run() arguments for a specific task type."""
+    configure_litellm_router_env()
     return argparse.Namespace(
         env="car_voice_assistant",
         task_type=task_type,
@@ -550,8 +557,8 @@ def build_args_from_config(config: dict, task_type: str) -> argparse.Namespace:
         max_concurrency=1,  # Sequential to avoid overloading agent under test
         # User simulator settings
         user_strategy="llm",
-        user_model=config_or_env(config, "user_model", "EVALUATOR_USER_MODEL", DEFAULT_NVIDIA_NIM_MODEL),
-        user_model_provider=config_or_env(config, "user_provider", "EVALUATOR_USER_PROVIDER", "nvidia_nim"),
+        user_model=config_or_env(config, "user_model", "EVALUATOR_USER_MODEL", default_evaluator_model()),
+        user_model_provider=config_or_env(config, "user_provider", "EVALUATOR_USER_PROVIDER", default_evaluator_provider()),
         user_thinking=config_bool_or_env(config, "user_thinking", "EVALUATOR_USER_THINKING", False),
         # Policy evaluator settings
         policy_evaluator_strategy="llm",
@@ -559,13 +566,13 @@ def build_args_from_config(config: dict, task_type: str) -> argparse.Namespace:
             config,
             "policy_evaluator_model",
             "EVALUATOR_POLICY_EVALUATOR_MODEL",
-            DEFAULT_NVIDIA_NIM_MODEL,
+            default_evaluator_model(),
         ),
         policy_evaluator_model_provider=config_or_env(
             config,
             "policy_evaluator_provider",
             "EVALUATOR_POLICY_EVALUATOR_PROVIDER",
-            "nvidia_nim",
+            default_evaluator_provider(),
         ),
         evaluate_policy=True,
         score_tool_execution_errors=True,
@@ -602,11 +609,13 @@ class CARBenchEvaluator(EvaluatorAgent):
         return True, "ok"
 
     async def run_eval(self, req: EvalRequest, updater: TaskUpdater) -> None:
+        configure_litellm_router_env()
         eval_logger = logger.bind(role="evaluator", context="eval")
         eval_logger.info(
             "Starting CAR-bench evaluation",
             agent_url=str(req.agent_under_test),
-            num_trials=req.config.get("num_trials", 1)
+            num_trials=req.config.get("num_trials", 1),
+            llm_routing=routing_summary(),
         )
         start_time = time.time()
 

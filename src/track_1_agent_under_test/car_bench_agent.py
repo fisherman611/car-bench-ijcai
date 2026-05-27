@@ -27,6 +27,7 @@ from litellm import completion
 from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
+from llm_routing import completion_router_kwargs
 from logging_utils import configure_logger
 from tool_call_types import ToolCall, ToolCallsData, normalize_tool_arguments
 from turn_metrics import TURN_METRICS_KEY, PROMPT_TOKENS, COMPLETION_TOKENS, COST, MODEL, THINKING_TOKENS, NUM_LLM_CALLS, AVG_LLM_CALL_TIME_MS, NUM_PASSES
@@ -191,6 +192,7 @@ class CARBenchAgentExecutor(AgentExecutor):
                 "tools": tools if tools else None,
                 "temperature": self.temperature,
             }
+            completion_kwargs.update(completion_router_kwargs(self.model))
 
             # Configure reasoning effort / thinking
             if self.thinking:
