@@ -12,6 +12,7 @@ from track_2_agent_under_test_codex.codex_client import CodexTokenUsage, add_tok
 from track_2_agent_under_test_codex_planner.planner_agent import (
     PlannerExecutorCARBenchAgentExecutor,
 )
+from tool_call_types import normalize_tool_arguments
 from turn_metrics import (
     AVG_LLM_CALL_TIME_MS,
     COMPLETION_TOKENS,
@@ -25,6 +26,33 @@ from turn_metrics import (
 
 
 class A2AResponseContractTest(unittest.TestCase):
+    def test_tool_arguments_are_normalized_from_schema(self) -> None:
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "open_close_sunroof",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "percentage": {
+                                "type": "number",
+                                "multipleOf": 1,
+                            }
+                        },
+                    },
+                },
+            }
+        ]
+
+        normalized = normalize_tool_arguments(
+            "open_close_sunroof",
+            {"percentage": "50"},
+            tools,
+        )
+
+        self.assertEqual(normalized, {"percentage": 50})
+
     def test_sync_client_serializes_a2a_1_json_field_names(self) -> None:
         message = create_message_with_parts(
             parts=[new_text_part("hello")],
