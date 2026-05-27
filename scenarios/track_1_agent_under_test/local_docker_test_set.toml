@@ -4,12 +4,12 @@
 
 [evaluator]
 build = { context = ".", dockerfile = "src/evaluator/Dockerfile.evaluator" }
-env = { GEMINI_API_KEY = "${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env}", LOGURU_LEVEL = "${LOGURU_LEVEL:-INFO}", CAR_BENCH_DATA_DIR = "/workspace/third_party/car-bench/car_bench/envs/car_voice_assistant/mock_data" }
+env = { GEMINI_API_KEY = "${GEMINI_API_KEY:-}", NVIDIA_NIM_API_KEY = "${NVIDIA_NIM_API_KEY:?Set NVIDIA_NIM_API_KEY in .env}", NVIDIA_NIM_API_BASE = "${NVIDIA_NIM_API_BASE:-https://integrate.api.nvidia.com/v1}", EVALUATOR_USER_MODEL = "${EVALUATOR_USER_MODEL:-nvidia_nim/meta/llama-3.3-70b-instruct}", EVALUATOR_USER_PROVIDER = "${EVALUATOR_USER_PROVIDER:-nvidia_nim}", EVALUATOR_USER_THINKING = "${EVALUATOR_USER_THINKING:-false}", EVALUATOR_POLICY_EVALUATOR_MODEL = "${EVALUATOR_POLICY_EVALUATOR_MODEL:-nvidia_nim/meta/llama-3.3-70b-instruct}", EVALUATOR_POLICY_EVALUATOR_PROVIDER = "${EVALUATOR_POLICY_EVALUATOR_PROVIDER:-nvidia_nim}", LOGURU_LEVEL = "${LOGURU_LEVEL:-INFO}", CAR_BENCH_DATA_DIR = "/workspace/third_party/car-bench/car_bench/envs/car_voice_assistant/mock_data" }
 volumes = ["./third_party/car-bench:/workspace/third_party/car-bench:ro"]
 
 [agent_under_test]
 build = { context = ".", dockerfile = "src/track_1_agent_under_test/Dockerfile.track-1-agent-under-test" }
-env = { ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}", OPENAI_API_KEY = "${OPENAI_API_KEY:-}", GEMINI_API_KEY = "${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env}", AGENT_LLM = "${AGENT_LLM:-gemini/gemini-2.5-flash}", AGENT_TEMPERATURE = "${AGENT_TEMPERATURE:-0.0}", LOGURU_LEVEL = "${LOGURU_LEVEL:-INFO}" }
+env = { ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}", OPENAI_API_KEY = "${OPENAI_API_KEY:-}", GEMINI_API_KEY = "${GEMINI_API_KEY:-}", NVIDIA_NIM_API_KEY = "${NVIDIA_NIM_API_KEY:?Set NVIDIA_NIM_API_KEY in .env}", NVIDIA_NIM_API_BASE = "${NVIDIA_NIM_API_BASE:-https://integrate.api.nvidia.com/v1}", AGENT_LLM = "${AGENT_LLM:-nvidia_nim/meta/llama-3.3-70b-instruct}", AGENT_TEMPERATURE = "${AGENT_TEMPERATURE:-0.0}", LOGURU_LEVEL = "${LOGURU_LEVEL:-INFO}" }
 
 [config]
 num_trials = 3
@@ -18,3 +18,8 @@ tasks_base_num_tasks = -1
 tasks_hallucination_num_tasks = -1
 tasks_disambiguation_num_tasks = -1
 max_steps = 50
+user_model = "nvidia_nim/meta/llama-3.3-70b-instruct"
+user_provider = "nvidia_nim"
+user_thinking = false
+policy_evaluator_model = "nvidia_nim/meta/llama-3.3-70b-instruct"
+policy_evaluator_provider = "nvidia_nim"
