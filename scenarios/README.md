@@ -68,7 +68,7 @@ For Docker scenarios, provide either `build` or `image`:
 ```toml
 [evaluator]
 build = { context = ".", dockerfile = "src/evaluator/Dockerfile.evaluator" }
-env = { GEMINI_API_KEY = "${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env}" }
+env = { NVIDIA_NIM_API_KEY = "${NVIDIA_NIM_API_KEY:?Set NVIDIA_NIM_API_KEY in .env}", NVIDIA_NIM_API_BASE = "${NVIDIA_NIM_API_BASE:-https://integrate.api.nvidia.com/v1}" }
 volumes = ["./third_party/car-bench:/workspace/third_party/car-bench:ro"]
 ```
 
@@ -89,7 +89,7 @@ For Docker local-build scenarios:
 ```toml
 [agent_under_test]
 build = { context = ".", dockerfile = "src/track_1_agent_under_test/Dockerfile.track-1-agent-under-test" }
-env = { AGENT_LLM = "${AGENT_LLM:-gemini/gemini-2.5-flash}" }
+env = { AGENT_LLM = "${AGENT_LLM:-nvidia_nim/meta/llama-3.1-70b-instruct}" }
 ```
 
 For GHCR scenarios:
@@ -97,7 +97,7 @@ For GHCR scenarios:
 ```toml
 [agent_under_test]
 image = "ghcr.io/yourusername/your-agent:latest"
-env = { AGENT_LLM = "${AGENT_LLM:-gemini/gemini-2.5-flash}" }
+env = { AGENT_LLM = "${AGENT_LLM:-nvidia_nim/meta/llama-3.1-70b-instruct}" }
 ```
 
 Optional result-label fields help make output filenames and metadata easier to
@@ -123,6 +123,10 @@ max_steps = 50
 tasks_base_num_tasks = -1
 tasks_hallucination_num_tasks = -1
 tasks_disambiguation_num_tasks = -1
+user_model = "nvidia_nim/meta/llama-3.1-70b-instruct"
+user_provider = "nvidia_nim"
+policy_evaluator_model = "nvidia_nim/meta/llama-3.1-70b-instruct"
+policy_evaluator_provider = "nvidia_nim"
 
 # Optional exact task filters:
 # tasks_base_task_id_filter = ["base_0"]

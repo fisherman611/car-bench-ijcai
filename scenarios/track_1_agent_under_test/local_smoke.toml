@@ -7,7 +7,7 @@ cmd = "python src/evaluator/server.py --host 127.0.0.1 --port 8081"
 
 [agent_under_test]
 endpoint = "http://127.0.0.1:8080"
-cmd = "python src/track_1_agent_under_test/server.py --host 127.0.0.1 --port 8080 --agent-llm gemini/gemini-2.5-flash --temperature 0.0"
+cmd = "python src/track_1_agent_under_test/server.py --host 127.0.0.1 --port 8080 --agent-llm nvidia_nim/meta/llama-3.1-70b-instruct --temperature 0.0"
 
 [config]
 num_trials = 1
@@ -15,4 +15,9 @@ task_split = "train"
 tasks_base_num_tasks = 1
 tasks_hallucination_num_tasks = 1
 tasks_disambiguation_num_tasks = 1
+user_model = "nvidia_nim/openai/gpt-oss-120b"
+user_provider = "nvidia_nim"
+user_thinking = false
+policy_evaluator_model = "n"
+policy_evaluator_provider = "nvidia_nim/openai/gpt-oss-120b"
 max_steps = 50

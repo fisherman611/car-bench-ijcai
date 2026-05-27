@@ -51,6 +51,89 @@ class CARBenchAgentExecutor(AgentExecutor):
         # Per-context turn metrics accumulation (reset when final response is sent)
         self.ctx_id_to_turn_metrics: dict[str, dict] = {}
 
+    @staticmethod
+    def _schema_type_set(schema: dict | None) -> set[str]:
+        if not isinstance(schema, dict):
+            return set()
+        schema_type = schema.get("type")
+        if isinstance(schema_type, str):
+            return {schema_type}
+        if isinstance(schema_type, list):
+            return {t for t in schema_type if isinstance(t, str)}
+        return set()
+
+    def _coerce_value_by_schema(self, value, schema: dict | None):
+        """Coerce LLM-produced tool args to JSON-schema types for runtime safety."""
+        type_set = self._schema_type_set(schema)
+        if value is None or not type_set:
+            return value
+
+        # Primitive coercions first.
+        if isinstance(value, str):
+            text = value.strip()
+            if "boolean" in type_set:
+                lowered = text.lower()
+                if lowered == "true":
+                    return True
+                if lowered == "false":
+                    return False
+
+            if "integer" in type_set:
+                try:
+                    parsed = float(text)
+                    if parsed.is_integer():
+                        return int(parsed)
+                except ValueError:
+                    pass
+
+            if "number" in type_set:
+                try:
+                    parsed = float(text)
+                    if isinstance(schema, dict) and schema.get("multipleOf") == 1 and parsed.is_integer():
+                        return int(parsed)
+                    return parsed
+                except ValueError:
+                    pass
+
+        # Structured coercions.
+        if isinstance(value, dict) and "object" in type_set and isinstance(schema, dict):
+            props = schema.get("properties", {})
+            if isinstance(props, dict):
+                return {
+                    k: self._coerce_value_by_schema(v, props.get(k, {}))
+                    for k, v in value.items()
+                }
+
+        if isinstance(value, list) and "array" in type_set and isinstance(schema, dict):
+            item_schema = schema.get("items", {})
+            return [self._coerce_value_by_schema(v, item_schema) for v in value]
+
+        return value
+
+    def _coerce_tool_arguments(self, tool_name: str, arguments: dict, tools: list[dict]) -> dict:
+        """Coerce arguments using the corresponding tool JSON schema if available."""
+        if not isinstance(arguments, dict) or not tools:
+            return arguments
+
+        tool_schema = None
+        for tool in tools:
+            function = tool.get("function", {}) if isinstance(tool, dict) else {}
+            if function.get("name") == tool_name:
+                tool_schema = function.get("parameters", {})
+                break
+
+        if not isinstance(tool_schema, dict):
+            return arguments
+
+        props = tool_schema.get("properties", {})
+        if not isinstance(props, dict):
+            return arguments
+
+        coerced = {}
+        for key, value in arguments.items():
+            coerced[key] = self._coerce_value_by_schema(value, props.get(key, {}))
+        return coerced
+
     async def execute(self, context: RequestContext, event_queue: EventQueue) -> None:
         inbound_message = context.message
         ctx_logger = logger.bind(role="agent_under_test", context=f"ctx:{context.context_id[:8]}")
@@ -289,13 +372,24 @@ class CARBenchAgentExecutor(AgentExecutor):
 
             # Add data Part if there are tool calls
             if assistant_content.get("tool_calls"):
-                tool_calls_list = [
-                    ToolCall(
-                        tool_name=tc["function"]["name"],
-                        arguments=json.loads(tc["function"]["arguments"]),
+                tool_calls_list = []
+                for tc in assistant_content["tool_calls"]:
+                    tool_name = tc["function"]["name"]
+                    raw_arguments = json.loads(tc["function"]["arguments"])
+                    coerced_arguments = self._coerce_tool_arguments(tool_name, raw_arguments, tools)
+                    if coerced_arguments != raw_arguments:
+                        ctx_logger.debug(
+                            "Coerced tool arguments by schema",
+                            tool_name=tool_name,
+                            raw_arguments=raw_arguments,
+                            coerced_arguments=coerced_arguments,
+                        )
+                    tool_calls_list.append(
+                        ToolCall(
+                            tool_name=tool_name,
+                            arguments=coerced_arguments,
+                        )
                     )
-                    for tc in assistant_content["tool_calls"]
-                ]
                 tool_calls_data = ToolCallsData(tool_calls=tool_calls_list)
                 parts.append(new_data_part(tool_calls_data.model_dump()))
 

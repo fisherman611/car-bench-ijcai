@@ -28,6 +28,7 @@ from logging_utils import configure_logger
 sys.path.pop(0)
 
 logger = configure_logger(role="agent_under_test", context="server")
+DEFAULT_AGENT_LLM = "nvidia_nim/meta/llama-3.1-70b-instruct"
 
 
 def prepare_agent_card(url: str) -> AgentCard:
@@ -81,7 +82,7 @@ def main():
     # Support both command-line args and environment variables
     # Priority: CLI args > env vars > default
     import os
-    agent_llm = args.agent_llm or os.getenv("AGENT_LLM", "gemini/gemini-2.5-flash")
+    agent_llm = args.agent_llm or os.getenv("AGENT_LLM", DEFAULT_AGENT_LLM)
     completion_kwargs = {
         "temperature": args.temperature or float(os.getenv("AGENT_TEMPERATURE", 0.0)),
         "thinking": args.thinking or (os.getenv("AGENT_THINKING", "false").lower() == "true"),

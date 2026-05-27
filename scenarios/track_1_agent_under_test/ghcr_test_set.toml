@@ -3,11 +3,11 @@
 
 [evaluator]
 image = "ghcr.io/car-bench/car-bench-evaluator:latest"
-env = { GEMINI_API_KEY = "${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env}", LOGURU_LEVEL = "${LOGURU_LEVEL:-INFO}" }
+env = { NVIDIA_NIM_API_KEY = "${NVIDIA_NIM_API_KEY:?Set NVIDIA_NIM_API_KEY in .env}", NVIDIA_NIM_API_BASE = "${NVIDIA_NIM_API_BASE:-https://integrate.api.nvidia.com/v1}", LOGURU_LEVEL = "${LOGURU_LEVEL:-INFO}" }
 
 [agent_under_test]
 image = "ghcr.io/yourusername/car-bench-track-1-agent-under-test:latest"
-env = { ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}", OPENAI_API_KEY = "${OPENAI_API_KEY:-}", GEMINI_API_KEY = "${GEMINI_API_KEY:?Set GEMINI_API_KEY in .env}", AGENT_LLM = "${AGENT_LLM:-gemini/gemini-2.5-flash}", AGENT_TEMPERATURE = "${AGENT_TEMPERATURE:-0.0}", LOGURU_LEVEL = "${LOGURU_LEVEL:-INFO}" }
+env = { ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}", OPENAI_API_KEY = "${OPENAI_API_KEY:-}", NVIDIA_NIM_API_KEY = "${NVIDIA_NIM_API_KEY:?Set NVIDIA_NIM_API_KEY in .env}", NVIDIA_NIM_API_BASE = "${NVIDIA_NIM_API_BASE:-https://integrate.api.nvidia.com/v1}", AGENT_LLM = "${AGENT_LLM:-nvidia_nim/meta/llama-3.1-70b-instruct}", AGENT_TEMPERATURE = "${AGENT_TEMPERATURE:-0.0}", LOGURU_LEVEL = "${LOGURU_LEVEL:-INFO}" }
 
 [config]
 num_trials = 3
@@ -15,4 +15,9 @@ task_split = "test"
 tasks_base_num_tasks = -1
 tasks_hallucination_num_tasks = -1
 tasks_disambiguation_num_tasks = -1
+user_model = "nvidia_nim/meta/llama-3.1-70b-instruct"
+user_provider = "nvidia_nim"
+user_thinking = false
+policy_evaluator_model = "nvidia_nim/meta/llama-3.1-70b-instruct"
+policy_evaluator_provider = "nvidia_nim"
 max_steps = 50

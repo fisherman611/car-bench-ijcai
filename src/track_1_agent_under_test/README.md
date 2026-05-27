@@ -37,9 +37,9 @@ For exact schemas and helper functions, read the
 Set the evaluator key and your model/provider keys in `.env`:
 
 ```bash
-GEMINI_API_KEY=...
-AGENT_LLM=anthropic/claude-haiku-4-5-20251001
-ANTHROPIC_API_KEY=...
+NVIDIA_NIM_API_KEY=...
+NVIDIA_NIM_API_BASE=https://integrate.api.nvidia.com/v1
+AGENT_LLM=nvidia_nim/meta/llama-3.1-70b-instruct
 ```
 
 `AGENT_LLM` can be any LiteLLM-compatible model string if you keep this starter

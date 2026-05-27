@@ -58,6 +58,8 @@ nest_asyncio.apply()
 logger = configure_logger(role="evaluator", context="-")
 
 RESPOND_ACTION_NAME = "respond"
+DEFAULT_EVAL_MODEL = "nvidia_nim/meta/llama-3.1-70b-instruct"
+DEFAULT_EVAL_PROVIDER = "nvidia_nim"
 
 
 def create_remote_agent_factory(agent_url: str):
@@ -525,13 +527,13 @@ def build_args_from_config(config: dict, task_type: str) -> argparse.Namespace:
         max_concurrency=1,  # Sequential to avoid overloading agent under test
         # User simulator settings
         user_strategy="llm",
-        user_model=config.get("user_model", "gemini/gemini-2.5-flash"),
-        user_model_provider=config.get("user_provider", "gemini"),
-        user_thinking=config.get("user_thinking", True),
+        user_model=config.get("user_model", DEFAULT_EVAL_MODEL),
+        user_model_provider=config.get("user_provider", DEFAULT_EVAL_PROVIDER),
+        user_thinking=config.get("user_thinking", False),
         # Policy evaluator settings
         policy_evaluator_strategy="llm",
-        policy_evaluator_model=config.get("policy_evaluator_model", "gemini/gemini-2.5-flash"),
-        policy_evaluator_model_provider=config.get("policy_evaluator_provider", "gemini"),
+        policy_evaluator_model=config.get("policy_evaluator_model", DEFAULT_EVAL_MODEL),
+        policy_evaluator_model_provider=config.get("policy_evaluator_provider", DEFAULT_EVAL_PROVIDER),
         evaluate_policy=True,
         score_tool_execution_errors=True,
         score_policy_errors=True,
