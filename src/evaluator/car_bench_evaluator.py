@@ -39,6 +39,7 @@ from agentbeats.tool_provider import ToolProvider
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from logging_utils import configure_logger
+from tool_call_types import normalize_tool_arguments
 from turn_metrics import (
     TURN_METRICS_KEY, SOURCE_KEY, SOURCE_USER, SOURCE_ENVIRONMENT,
     extract_turn_metrics, AVG_LLM_CALL_TIME_MS, NUM_LLM_CALLS, COST,
@@ -58,6 +59,22 @@ nest_asyncio.apply()
 logger = configure_logger(role="evaluator", context="-")
 
 RESPOND_ACTION_NAME = "respond"
+DEFAULT_NVIDIA_NIM_MODEL = "nvidia_nim/meta/llama-3.3-70b-instruct"
+
+
+def config_or_env(config: dict, key: str, env_key: str, default: Any) -> Any:
+    if key in config:
+        return config[key]
+    return os.getenv(env_key, default)
+
+
+def config_bool_or_env(config: dict, key: str, env_key: str, default: bool) -> bool:
+    if key in config:
+        return bool(config[key])
+    raw = os.getenv(env_key)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def create_remote_agent_factory(agent_url: str):
@@ -185,7 +202,7 @@ def create_remote_agent_factory(agent_url: str):
                 )
 
                 # Parse response into standard message format
-                next_message = self._parse_response(response)
+                next_message = self._parse_response(response, tools_info)
 
                 # Extract turn_metrics from response metadata (only on final responses)
                 response_metadata = getattr(response, "metadata", None)
@@ -216,7 +233,7 @@ def create_remote_agent_factory(agent_url: str):
 
                 return next_message, updated_state
 
-            def _parse_response(self, response) -> Dict[str, Any]:
+            def _parse_response(self, response, tools_info: List[Dict[str, Any]]) -> Dict[str, Any]:
                 """Parse the A2A Message response into standard agent message format.
 
                 Handles both protobuf Message (v1.0) and Pydantic Message (v0.3 compat) formats.
@@ -244,7 +261,7 @@ def create_remote_agent_factory(agent_url: str):
                             elif content_type == "data":
                                 data = MessageToDict(part.data)
                                 if "tool_calls" in data:
-                                    tool_calls = self._parse_tool_calls(data["tool_calls"])
+                                    tool_calls = self._parse_tool_calls(data["tool_calls"], tools_info)
                                 elif "reasoning_content" in data:
                                     reasoning_content = data["reasoning_content"]
                         # Handle Pydantic Part (v0.3 compat) — has .root attribute
@@ -254,7 +271,7 @@ def create_remote_agent_factory(agent_url: str):
                             elif hasattr(part.root, 'data') and part.root.data is not None:
                                 data = part.root.data
                                 if "tool_calls" in data:
-                                    tool_calls = self._parse_tool_calls(data["tool_calls"])
+                                    tool_calls = self._parse_tool_calls(data["tool_calls"], tools_info)
                                 elif "reasoning_content" in data:
                                     reasoning_content = data["reasoning_content"]
                         # Handle dict representation
@@ -265,7 +282,7 @@ def create_remote_agent_factory(agent_url: str):
                             elif "data" in part_data and part_data["data"]:
                                 data = part_data["data"]
                                 if "tool_calls" in data:
-                                    tool_calls = self._parse_tool_calls(data["tool_calls"])
+                                    tool_calls = self._parse_tool_calls(data["tool_calls"], tools_info)
                                 elif "reasoning_content" in data:
                                     reasoning_content = data["reasoning_content"]
 
@@ -297,19 +314,27 @@ def create_remote_agent_factory(agent_url: str):
                     }
 
             @staticmethod
-            def _parse_tool_calls(tool_calls_data: list) -> list:
+            def _parse_tool_calls(tool_calls_data: list, tools_info: List[Dict[str, Any]]) -> list:
                 """Parse tool calls from structured data into LLM format."""
-                return [
-                    {
-                        "id": f"call_{hash(json.dumps(tc)) % 100000000:08x}",
-                        "type": "function",
-                        "function": {
-                            "name": tc.get("tool_name", tc.get("toolName", "")),
-                            "arguments": json.dumps(tc.get("arguments", {})),
-                        },
-                    }
-                    for tc in tool_calls_data
-                ]
+                parsed_tool_calls = []
+                for tc in tool_calls_data:
+                    name = tc.get("tool_name", tc.get("toolName", ""))
+                    arguments = normalize_tool_arguments(
+                        name,
+                        tc.get("arguments", {}),
+                        tools_info,
+                    )
+                    parsed_tool_calls.append(
+                        {
+                            "id": f"call_{hash(json.dumps(tc)) % 100000000:08x}",
+                            "type": "function",
+                            "function": {
+                                "name": name,
+                                "arguments": json.dumps(arguments),
+                            },
+                        }
+                    )
+                return parsed_tool_calls
 
         return RemoteA2AAgent(agent_url=agent_url)
 
@@ -525,13 +550,23 @@ def build_args_from_config(config: dict, task_type: str) -> argparse.Namespace:
         max_concurrency=1,  # Sequential to avoid overloading agent under test
         # User simulator settings
         user_strategy="llm",
-        user_model=config.get("user_model", "gemini/gemini-2.5-flash"),
-        user_model_provider=config.get("user_provider", "gemini"),
-        user_thinking=config.get("user_thinking", True),
+        user_model=config_or_env(config, "user_model", "EVALUATOR_USER_MODEL", DEFAULT_NVIDIA_NIM_MODEL),
+        user_model_provider=config_or_env(config, "user_provider", "EVALUATOR_USER_PROVIDER", "nvidia_nim"),
+        user_thinking=config_bool_or_env(config, "user_thinking", "EVALUATOR_USER_THINKING", False),
         # Policy evaluator settings
         policy_evaluator_strategy="llm",
-        policy_evaluator_model=config.get("policy_evaluator_model", "gemini/gemini-2.5-flash"),
-        policy_evaluator_model_provider=config.get("policy_evaluator_provider", "gemini"),
+        policy_evaluator_model=config_or_env(
+            config,
+            "policy_evaluator_model",
+            "EVALUATOR_POLICY_EVALUATOR_MODEL",
+            DEFAULT_NVIDIA_NIM_MODEL,
+        ),
+        policy_evaluator_model_provider=config_or_env(
+            config,
+            "policy_evaluator_provider",
+            "EVALUATOR_POLICY_EVALUATOR_PROVIDER",
+            "nvidia_nim",
+        ),
         evaluate_policy=True,
         score_tool_execution_errors=True,
         score_policy_errors=True,

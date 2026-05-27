@@ -28,7 +28,7 @@ from uuid import uuid4
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from logging_utils import configure_logger
-from tool_call_types import ToolCall, ToolCallsData
+from tool_call_types import ToolCall, ToolCallsData, normalize_tool_arguments
 from turn_metrics import TURN_METRICS_KEY, PROMPT_TOKENS, COMPLETION_TOKENS, COST, MODEL, THINKING_TOKENS, NUM_LLM_CALLS, AVG_LLM_CALL_TIME_MS, NUM_PASSES
 sys.path.pop(0)
 
@@ -289,13 +289,27 @@ class CARBenchAgentExecutor(AgentExecutor):
 
             # Add data Part if there are tool calls
             if assistant_content.get("tool_calls"):
-                tool_calls_list = [
-                    ToolCall(
-                        tool_name=tc["function"]["name"],
-                        arguments=json.loads(tc["function"]["arguments"]),
+                normalized_tool_calls = []
+                tool_calls_list = []
+                for tc in assistant_content["tool_calls"]:
+                    tool_name = tc["function"]["name"]
+                    arguments = normalize_tool_arguments(
+                        tool_name,
+                        json.loads(tc["function"]["arguments"]),
+                        tools,
                     )
-                    for tc in assistant_content["tool_calls"]
-                ]
+                    normalized_tc = {
+                        **tc,
+                        "function": {
+                            **tc["function"],
+                            "arguments": json.dumps(arguments),
+                        },
+                    }
+                    normalized_tool_calls.append(normalized_tc)
+                    tool_calls_list.append(
+                        ToolCall(tool_name=tool_name, arguments=arguments)
+                    )
+                assistant_content["tool_calls"] = normalized_tool_calls
                 tool_calls_data = ToolCallsData(tool_calls=tool_calls_list)
                 parts.append(new_data_part(tool_calls_data.model_dump()))
 
