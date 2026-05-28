@@ -4,12 +4,12 @@
 
 [evaluator]
 build = { context = ".", dockerfile = "src/evaluator/Dockerfile.evaluator" }
-env = { NVIDIA_NIM_API_KEY = "${NVIDIA_NIM_API_KEY:?Set NVIDIA_NIM_API_KEY in .env}", NVIDIA_NIM_API_BASE = "${NVIDIA_NIM_API_BASE:-https://integrate.api.nvidia.com/v1}", LOGURU_LEVEL = "${LOGURU_LEVEL:-INFO}", CAR_BENCH_DATA_DIR = "/workspace/third_party/car-bench/car_bench/envs/car_voice_assistant/mock_data" }
+env = { NVIDIA_NIM_API_KEY = "${NVIDIA_NIM_API_KEY:-}", NVIDIA_NIM_API_BASE = "${NVIDIA_NIM_API_BASE:-https://integrate.api.nvidia.com/v1}", NINEROUTER_API_KEY = "${NINEROUTER_API_KEY:-}", NINEROUTER_API_BASE = "${NINEROUTER_API_BASE:-}", LOGURU_LEVEL = "${LOGURU_LEVEL:-INFO}", CAR_BENCH_DATA_DIR = "/workspace/third_party/car-bench/car_bench/envs/car_voice_assistant/mock_data" }
 volumes = ["./third_party/car-bench:/workspace/third_party/car-bench:ro"]
 
 [agent_under_test]
 build = { context = ".", dockerfile = "src/track_1_agent_under_test/Dockerfile.track-1-agent-under-test" }
-env = { ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}", OPENAI_API_KEY = "${OPENAI_API_KEY:-}", NVIDIA_NIM_API_KEY = "${NVIDIA_NIM_API_KEY:?Set NVIDIA_NIM_API_KEY in .env}", NVIDIA_NIM_API_BASE = "${NVIDIA_NIM_API_BASE:-https://integrate.api.nvidia.com/v1}", AGENT_LLM = "${AGENT_LLM:-nvidia_nim/meta/llama-3.1-70b-instruct}", AGENT_TEMPERATURE = "${AGENT_TEMPERATURE:-0.0}", LOGURU_LEVEL = "${LOGURU_LEVEL:-INFO}" }
+env = { ANTHROPIC_API_KEY = "${ANTHROPIC_API_KEY:-}", OPENAI_API_KEY = "${OPENAI_API_KEY:-}", NINEROUTER_API_KEY = "${NINEROUTER_API_KEY:-}", NINEROUTER_API_BASE = "${NINEROUTER_API_BASE:-}", NVIDIA_NIM_API_KEY = "${NVIDIA_NIM_API_KEY:-}", NVIDIA_NIM_API_BASE = "${NVIDIA_NIM_API_BASE:-https://integrate.api.nvidia.com/v1}", AGENT_LLM = "${AGENT_LLM:-nvidia_nim/nvidia/meta/llama-3.1-70b-instruct}", AGENT_TEMPERATURE = "${AGENT_TEMPERATURE:-0.0}", LOGURU_LEVEL = "${LOGURU_LEVEL:-INFO}" }
 
 [config]
 num_trials = 3
@@ -17,9 +17,12 @@ task_split = "test"
 tasks_base_num_tasks = -1
 tasks_hallucination_num_tasks = -1
 tasks_disambiguation_num_tasks = -1
-user_model = "nvidia_nim/meta/llama-3.1-70b-instruct"
+user_model = "nvidia_nim/nvidia/meta/llama-3.1-70b-instruct"
 user_provider = "nvidia_nim"
 user_thinking = false
-policy_evaluator_model = "nvidia_nim/meta/llama-3.1-70b-instruct"
+policy_evaluator_model = "nvidia_nim/nvidia/meta/llama-3.1-70b-instruct"
 policy_evaluator_provider = "nvidia_nim"
 max_steps = 50
+
+
+

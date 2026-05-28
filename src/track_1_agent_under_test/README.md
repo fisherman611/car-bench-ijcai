@@ -39,7 +39,11 @@ Set the evaluator key and your model/provider keys in `.env`:
 ```bash
 NVIDIA_NIM_API_KEY=...
 NVIDIA_NIM_API_BASE=https://integrate.api.nvidia.com/v1
-AGENT_LLM=nvidia_nim/meta/llama-3.1-70b-instruct
+AGENT_LLM=nvidia_nim/nvidia/meta/llama-3.1-70b-instruct
+# Optional: route via 9router
+# NINEROUTER_API_KEY=...
+# NINEROUTER_API_BASE=https://your-9router-endpoint/v1
+# AGENT_LLM=nvidia_nim/nvidia/meta/llama-3.1-70b-instruct
 ```
 
 `AGENT_LLM` can be any LiteLLM-compatible model string if you keep this starter
@@ -68,3 +72,6 @@ docker compose --env-file .env -f scenarios/track_1_agent_under_test/docker-comp
   contract.
 - [Harnessing guide](../../docs/agent-under-test-harnessing.md): what advanced
   internal harnesses may and may not do.
+
+
+

@@ -58,8 +58,23 @@ nest_asyncio.apply()
 logger = configure_logger(role="evaluator", context="-")
 
 RESPOND_ACTION_NAME = "respond"
-DEFAULT_EVAL_MODEL = "nvidia_nim/meta/llama-3.1-70b-instruct"
+DEFAULT_EVAL_MODEL = "nvidia_nim/nvidia/meta/llama-3.1-70b-instruct"
 DEFAULT_EVAL_PROVIDER = "nvidia_nim"
+
+
+def _apply_ninerouter_nvidia_nim_env_aliases() -> None:
+    """Map 9router env vars to NVIDIA NIM env vars for LiteLLM."""
+    ninerouter_key = os.getenv("NINEROUTER_API_KEY")
+    ninerouter_base = os.getenv("NINEROUTER_API_BASE")
+
+    # If 9router vars exist, force routing through 9router by overriding NIM vars.
+    if ninerouter_key:
+        os.environ["NVIDIA_NIM_API_KEY"] = ninerouter_key
+    if ninerouter_base:
+        os.environ["NVIDIA_NIM_API_BASE"] = ninerouter_base
+
+
+_apply_ninerouter_nvidia_nim_env_aliases()
 
 
 def create_remote_agent_factory(agent_url: str):
@@ -702,3 +717,6 @@ class CARBenchEvaluator(EvaluatorAgent):
                 new_text_message(f"Evaluation failed: {e}")
             )
             raise
+
+
+

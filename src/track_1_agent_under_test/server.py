@@ -1,5 +1,6 @@
 """Server entry point for CAR-bench agent under test."""
 import argparse
+import os
 import sys
 from pathlib import Path
 import warnings
@@ -28,7 +29,19 @@ from logging_utils import configure_logger
 sys.path.pop(0)
 
 logger = configure_logger(role="agent_under_test", context="server")
-DEFAULT_AGENT_LLM = "nvidia_nim/meta/llama-3.1-70b-instruct"
+DEFAULT_AGENT_LLM = "nvidia_nim/nvidia/meta/llama-3.1-70b-instruct"
+
+
+def _apply_ninerouter_nvidia_nim_env_aliases() -> None:
+    """Map 9router env vars to NVIDIA NIM env vars for LiteLLM."""
+    ninerouter_key = os.getenv("NINEROUTER_API_KEY")
+    ninerouter_base = os.getenv("NINEROUTER_API_BASE")
+
+    # If 9router vars exist, force routing through 9router by overriding NIM vars.
+    if ninerouter_key:
+        os.environ["NVIDIA_NIM_API_KEY"] = ninerouter_key
+    if ninerouter_base:
+        os.environ["NVIDIA_NIM_API_BASE"] = ninerouter_base
 
 
 def prepare_agent_card(url: str) -> AgentCard:
@@ -63,6 +76,8 @@ def prepare_agent_card(url: str) -> AgentCard:
 
 
 def main():
+    _apply_ninerouter_nvidia_nim_env_aliases()
+
     parser = argparse.ArgumentParser(description="Run the CAR-bench agent (agent under test).")
     parser.add_argument("--host", type=str, default="127.0.0.1", help="Host to bind the server")
     parser.add_argument("--port", type=int, default=8080, help="Port to bind the server")
@@ -81,7 +96,6 @@ def main():
 
     # Support both command-line args and environment variables
     # Priority: CLI args > env vars > default
-    import os
     agent_llm = args.agent_llm or os.getenv("AGENT_LLM", DEFAULT_AGENT_LLM)
     completion_kwargs = {
         "temperature": args.temperature or float(os.getenv("AGENT_TEMPERATURE", 0.0)),
@@ -130,3 +144,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
