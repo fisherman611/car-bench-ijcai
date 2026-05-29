@@ -37,7 +37,7 @@ logger = configure_logger(role="agent_under_test", context="-")
 SYSTEM_PROMPT = """You are a helpful car voice assistant. Follow the policy and tool instructions provided."""
 ENHANCED_SYSTEM_PROMPT_PATH = (
     Path(__file__).resolve().parents[2]
-    / "system_prompt"
+    / "system_prompts"
     / "hallucination"
     / "system_prompt.xml"
 )
@@ -78,7 +78,7 @@ class CARBenchAgentExecutor(AgentExecutor):
         self.ctx_id_to_tools: dict[str, list[dict]] = {}
         # Per-context turn metrics accumulation (reset when final response is sent)
         self.ctx_id_to_turn_metrics: dict[str, dict] = {}
-        self._printed_system_prompt = True
+        self._printed_system_prompt = False
 
     @staticmethod
     def _schema_type_set(schema: dict | None) -> set[str]:

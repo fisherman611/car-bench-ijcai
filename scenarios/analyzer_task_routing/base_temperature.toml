@@ -1,0 +1,26 @@
+[case]
+name = "base_temperature"
+expected_task = "base"
+user_question = "Set cabin temperature to 22 degrees."
+
+[[visible_tools]]
+name = "set_climate_temperature"
+description = "Vehicle Climate Control: Sets the cabin temperature."
+parameters_json = """
+{
+  "type": "object",
+  "required": ["temperature"],
+  "properties": {
+    "temperature": {"type": "number"}
+  }
+}
+"""
+result_schema_json = """
+{
+  "type": "object",
+  "properties": {
+    "temperature": {"type": "number"},
+    "status": {"type": "string"}
+  }
+}
+"""

@@ -1,0 +1,33 @@
+[case]
+name = "disambiguation_ambiguous_reference"
+expected_task = "disambiguation"
+user_question = "Open it."
+
+[[visible_tools]]
+name = "open_close_trunk_door"
+description = "Vehicle Control: Opens or closes the trunk door."
+parameters_json = """
+{
+  "type": "object",
+  "required": ["position"],
+  "properties": {
+    "position": {"type": "string", "enum": ["open", "closed"]}
+  }
+}
+"""
+result_schema_json = "{}"
+
+[[visible_tools]]
+name = "open_close_window"
+description = "Vehicle Control: Moves the specified window in the car."
+parameters_json = """
+{
+  "type": "object",
+  "required": ["window", "percentage"],
+  "properties": {
+    "window": {"type": "string"},
+    "percentage": {"type": "number"}
+  }
+}
+"""
+result_schema_json = "{}"

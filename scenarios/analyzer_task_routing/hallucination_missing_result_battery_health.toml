@@ -1,0 +1,18 @@
+[case]
+name = "hallucination_missing_result_battery_health"
+expected_task = "hallucination"
+user_question = "What is my battery health percentage?"
+
+[[visible_tools]]
+name = "get_battery_status"
+description = "Get battery status, battery level, and estimated range."
+parameters_json = "{}"
+result_schema_json = """
+{
+  "type": "object",
+  "properties": {
+    "battery_level": {"type": "number"},
+    "estimated_range": {"type": "number"}
+  }
+}
+"""

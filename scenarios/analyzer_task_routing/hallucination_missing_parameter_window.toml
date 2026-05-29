@@ -1,0 +1,28 @@
+[case]
+name = "hallucination_missing_parameter_window"
+expected_task = "hallucination"
+user_question = "Open the driver window to 50 percent."
+
+[[visible_tools]]
+name = "open_close_window"
+description = "Vehicle Control: Moves the specified window in the car."
+parameters_json = """
+{
+  "type": "object",
+  "required": ["window"],
+  "properties": {
+    "window": {
+      "type": "string",
+      "enum": ["ALL", "DRIVER", "PASSENGER", "DRIVER_REAR", "PASSENGER_REAR"]
+    }
+  }
+}
+"""
+result_schema_json = """
+{
+  "type": "object",
+  "properties": {
+    "window": {"type": "string"}
+  }
+}
+"""

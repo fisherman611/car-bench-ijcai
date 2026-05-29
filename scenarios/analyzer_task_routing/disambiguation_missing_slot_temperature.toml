@@ -1,0 +1,18 @@
+[case]
+name = "disambiguation_missing_slot_temperature"
+expected_task = "disambiguation"
+user_question = "Set the temperature."
+
+[[visible_tools]]
+name = "set_climate_temperature"
+description = "Vehicle Climate Control: Sets the cabin temperature."
+parameters_json = """
+{
+  "type": "object",
+  "required": ["temperature"],
+  "properties": {
+    "temperature": {"type": "number"}
+  }
+}
+"""
+result_schema_json = "{}"
