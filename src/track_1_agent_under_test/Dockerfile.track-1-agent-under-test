@@ -20,6 +20,7 @@ WORKDIR /home/carbench/app
 
 COPY --from=python-deps --chown=carbench:carbench /home/carbench/app/.venv .venv
 COPY --chown=carbench:carbench src src
+COPY --chown=carbench:carbench system_prompt system_prompt
 
 ENV PYTHONPATH=/home/carbench/app/src
 

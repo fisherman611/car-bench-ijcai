@@ -35,6 +35,34 @@ sys.path.pop(0)
 logger = configure_logger(role="agent_under_test", context="-")
 
 SYSTEM_PROMPT = """You are a helpful car voice assistant. Follow the policy and tool instructions provided."""
+ENHANCED_SYSTEM_PROMPT_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "system_prompt"
+    / "hallucination"
+    / "system_prompt.xml"
+)
+CAR_BENCH_POLICY_PLACEHOLDER = "{{CAR_BENCH_POLICY}}"
+_ENHANCED_SYSTEM_PROMPT_TEMPLATE: str | None = None
+
+
+def load_enhanced_system_prompt_template() -> str:
+    """Load the Track 1 hallucination prompt wrapper once per process."""
+    global _ENHANCED_SYSTEM_PROMPT_TEMPLATE
+    if _ENHANCED_SYSTEM_PROMPT_TEMPLATE is None:
+        _ENHANCED_SYSTEM_PROMPT_TEMPLATE = ENHANCED_SYSTEM_PROMPT_PATH.read_text(
+            encoding="utf-8"
+        )
+    return _ENHANCED_SYSTEM_PROMPT_TEMPLATE
+
+
+def build_enhanced_system_prompt(car_bench_policy: str) -> str:
+    template = load_enhanced_system_prompt_template()
+    if CAR_BENCH_POLICY_PLACEHOLDER not in template:
+        raise ValueError(
+            f"{ENHANCED_SYSTEM_PROMPT_PATH} must contain "
+            f"{CAR_BENCH_POLICY_PLACEHOLDER}"
+        )
+    return template.replace(CAR_BENCH_POLICY_PLACEHOLDER, car_bench_policy)
 
 
 class CARBenchAgentExecutor(AgentExecutor):
@@ -50,6 +78,7 @@ class CARBenchAgentExecutor(AgentExecutor):
         self.ctx_id_to_tools: dict[str, list[dict]] = {}
         # Per-context turn metrics accumulation (reset when final response is sent)
         self.ctx_id_to_turn_metrics: dict[str, dict] = {}
+        self._printed_system_prompt = True
 
     @staticmethod
     def _schema_type_set(schema: dict | None) -> set[str]:
@@ -161,6 +190,15 @@ class CARBenchAgentExecutor(AgentExecutor):
                         system_prompt = parts_split[0].replace("System:", "").strip()
                         user_message_text = parts_split[1].strip()
                         if not messages:  # Only add system prompt once
+                            system_prompt = build_enhanced_system_prompt(system_prompt)
+                            if not self._printed_system_prompt:
+                                print(
+                                    "\n===== TRACK 1 SYSTEM PROMPT BEGIN =====\n"
+                                    f"{system_prompt}\n"
+                                    "===== TRACK 1 SYSTEM PROMPT END =====\n",
+                                    flush=True,
+                                )
+                                self._printed_system_prompt = True
                             messages.append({"role": "system", "content": system_prompt})
                     else:
                         # Regular user message
